@@ -59,6 +59,9 @@ def main(source="videos/xe-tăng.mp4", model_path="yolov10s-ver2.pt"):
         paused = False
         frame_skip = 1  # Start with no frame skipping
         frame_counter = 0
+        
+        # 🆕 THÊM: Biến đếm track duy nhất
+        unique_track_ids = set()
 
         print("🚀 Starting detection... (Press 'p' to pause, 'q' to quit)")
         print("📊 Controls: '+'=skip frames, '-'=less skipping, 'd'=toggle debug")
@@ -89,6 +92,11 @@ def main(source="videos/xe-tăng.mp4", model_path="yolov10s-ver2.pt"):
 
                     # Get object coordinates and motion vectors
                     coordinates_list = get_object_coordinates(tracks, object_tracker)
+                    
+                    # 🆕 CẬP NHẬT: Đếm track ID duy nhất
+                    for coords in coordinates_list:
+                        track_id = coords['track_id']
+                        unique_track_ids.add(track_id)
                     
                     # Log detections
                     if debug_mode:
@@ -163,8 +171,13 @@ def main(source="videos/xe-tăng.mp4", model_path="yolov10s-ver2.pt"):
         if 'fps_buffer' in locals() and fps_buffer:
             avg_fps = sum(fps_buffer) / len(fps_buffer)
             print(f"📊 Average FPS: {avg_fps:.1f}")
-        if 'object_tracker' in locals():
-            print(f"📈 Total tracks detected: {len(object_tracker.track_history)}")
+        
+        # 🆕 SỬA: Sử dụng unique_track_ids thay vì object_tracker.track_history
+        print(f"📈 Total unique tracks detected: {len(unique_track_ids)}")
+        
+        # Optional: Vẫn hiển thị track hiện tại trong memory để debug
+        # if 'object_tracker' in locals():
+        #     print(f"📉 Current active tracks in memory: {len(object_tracker.track_history)}")
 
 if __name__ == "__main__":
     main()
