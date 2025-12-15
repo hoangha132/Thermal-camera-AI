@@ -99,6 +99,7 @@ class ObjectTracker:
         self.track_history = {}  # track_id -> deque of (center_x, center_y)
         self.motion_vectors = {}  # track_id -> (dx, dy, speed)
         self.max_history = max_history
+        self.inactive_counter = {}  # 🆕 Thêm dòng này!
     
     def update_track(self, track_id, bbox):
         """
@@ -144,16 +145,30 @@ class ObjectTracker:
             return list(self.track_history[track_id])[-max_points:]
         return []
     
-    def cleanup_old_tracks(self, active_track_ids):
-        """Remove tracks that are no longer active"""
+    def cleanup_old_tracks(self, active_track_ids, max_inactive_frames=30):
+        """Remove tracks that are no longer active for X frames"""
         current_ids = set(active_track_ids)
-        all_ids = set(self.track_history.keys())
         
-        for track_id in all_ids - current_ids:
-            if track_id in self.track_history:
-                del self.track_history[track_id]
-            if track_id in self.motion_vectors:
-                del self.motion_vectors[track_id]
+        # Chỉ xóa các track không active trong nhiều frame
+        for track_id in list(self.track_history.keys()):
+            if track_id not in current_ids:
+                # Tăng counter cho track không active
+                if track_id not in self.inactive_counter:
+                    self.inactive_counter[track_id] = 1
+                else:
+                    self.inactive_counter[track_id] += 1
+                
+                # Chỉ xóa sau nhiều frame không active
+                if self.inactive_counter[track_id] > max_inactive_frames:
+                    del self.track_history[track_id]
+                    if track_id in self.motion_vectors:
+                        del self.motion_vectors[track_id]
+                    del self.inactive_counter[track_id]
+            else:
+                # Reset counter nếu track active lại
+                if track_id in self.inactive_counter:
+                    del self.inactive_counter[track_id]
+
 
 def get_object_coordinates(tracks, object_tracker):
     """
